@@ -1,6 +1,6 @@
 defmodule TwitchEventSub.Events.ShoutoutReceive do
   @moduledoc false
-  use TwitchChat.Event,
+  use TwitchEventSub.Event,
     fields: [
       :from_broadcaster_id,
       :from_broadcaster_name,

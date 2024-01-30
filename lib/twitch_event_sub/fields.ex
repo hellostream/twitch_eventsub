@@ -4,6 +4,20 @@ defmodule TwitchEventSub.Fields do
   """
 
   @typedoc """
+  Found in Twitch EventSub.
+  """
+  @type badge :: %{
+          id: String.t(),
+          info: String.t(),
+          set_id: String.t()
+        }
+
+  @typedoc """
+  Found in Twitch EventSub.
+  """
+  @type badges :: [badge()]
+
+  @typedoc """
   Found in Twitch EventSub subscriptions `channel.shoutout.receive`.
   """
   @type broadcaster_id :: String.t()
@@ -19,9 +33,55 @@ defmodule TwitchEventSub.Fields do
   @type channel :: String.t()
 
   @typedoc """
+  Metadata pertaining to a cheermote.
+
+   * `:prefix` - The name portion of the Cheermote string that you use in chat
+     to cheer Bits. The full Cheermote string is the concatenation of {prefix} +
+     {number of Bits}. For example, if the prefix is “Cheer” and you want to
+     cheer 100 Bits, the full Cheermote string is Cheer100. When the Cheermote
+     string is entered in chat, Twitch converts it to the image associated with
+     the Bits tier that was cheered.
+  * `:bits` - The amount of bits cheered.
+  * `:tier` - The tier level of the cheermote.
+
+  """
+  @type cheermote :: %{
+          prefix: String.t(),
+          bits: non_neg_integer(),
+          tier: non_neg_integer()
+        }
+
+  @typedoc """
+  Found in Twitch EventSub.
+  """
+  @type color :: String.t()
+
+  @typedoc """
+  Found in Twitch EventSub.
+  Is `nil` if from something like an anonymous sub gift.
+  """
+  @type cumulative_total :: non_neg_integer() | nil
+
+  @typedoc """
   Found in Twitch EventSub.
   """
   @type duration_seconds :: String.t()
+
+  @typedoc """
+  Metadata pertaining to an emote.
+  """
+  @type emote :: %{
+          __struct__: TwitchEventSub.Events.ChatMessage.Fragments.Emote,
+          id: String.t(),
+          emote_set_id: String.t(),
+          owner_id: String.t(),
+          format: [:animated | :static]
+        }
+
+  @typedoc """
+  Found in Twitch EventSub.
+  """
+  @type emotes :: [emote()]
 
   @typedoc """
   Found in Twitch EventSub subscriptions `channel.follow`.
@@ -46,7 +106,22 @@ defmodule TwitchEventSub.Fields do
   @typedoc """
   Found in Twitch EventSub.
   """
-  @type is_automatic :: boolean()
+  @type is_anon? :: boolean()
+
+  @typedoc """
+  Found in Twitch EventSub.
+  """
+  @type is_auto? :: boolean()
+
+  @typedoc """
+  Found in Twitch EventSub.
+  """
+  @type is_gift? :: boolean()
+
+  @typedoc """
+  Found in Twitch EventSub.
+  """
+  @type is_prime? :: boolean()
 
   @typedoc """
   Found in Twitch EventSub.
@@ -69,15 +144,20 @@ defmodule TwitchEventSub.Fields do
   @type started_at :: DateTime.t()
 
   @typedoc """
+  Found in Twitch EventSub subscriptions `channel.subscribe`.
+  """
+  @type tier :: :t1 | :t2 | :t3
+
+  @typedoc """
   Found in Follow event.
   """
   @type user_id :: String.t()
-  
+
   @typedoc """
   Found in Follow event.
   """
   @type user_login :: String.t()
-  
+
   @typedoc """
   Found in Follow event.
   """

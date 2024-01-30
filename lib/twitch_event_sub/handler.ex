@@ -12,12 +12,10 @@ defmodule TwitchEventSub.Handler do
 
       @impl true
       def handle_event(event) do
-        Logger.debug("[] Event: #{inspect(event)}")
+        Logger.debug("[TwitchEventSub.Handler] Event: #{inspect(event)}")
       end
 
-      defoverridable(
-        handle_event: 1
-      )
+      defoverridable(handle_event: 1)
     end
   end
 end

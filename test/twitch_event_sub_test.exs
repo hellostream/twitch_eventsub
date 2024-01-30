@@ -1,8 +1,4 @@
 defmodule TwitchEventSubTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   doctest TwitchEventSub
-
-  test "greets the world" do
-    assert TwitchEventSub.hello() == :world
-  end
 end

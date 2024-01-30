@@ -1,13 +1,16 @@
-defmodule TwitchEventSub.Events.Follow do
+defmodule TwitchEventSub.Events.SubGift do
   @moduledoc false
   use TwitchEventSub.Event,
     fields: [
       :broadcaster_id,
       :broadcaster_name,
       :channel,
-      :followed_at,
       :user_id,
       :user_login,
-      :user_name
+      :user_name,
+      :total,
+      :tier,
+      :cumulative_total,
+      :is_anon?
     ]
 end

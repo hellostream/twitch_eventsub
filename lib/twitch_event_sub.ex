@@ -4,13 +4,13 @@ defmodule TwitchEventSub do
 
   require Logger
 
-  alias TwitchChat.Twitch.Client
+  alias TwitchEventSub.TwitchClient
 
   @default_url "wss://eventsub.wss.twitch.tv/ws"
 
   @default_keepalive_timeout 30
 
-  @required_opts ~w[user_id client_id access_token handler]a
+  @required_opts ~w[user_id client_id access_token handler channel_ids]a
   @allowed_opts @required_opts ++ ~w[subscriptions]
 
   # NOTE: `extension.bits_transaction.create` requires `extension_client_id`.
@@ -24,6 +24,9 @@ defmodule TwitchEventSub do
     channel.shoutout.create channel.shoutout.receive
     stream.online stream.offline
   ]
+
+  # TODO add these to default once I parse them properly
+  # channel.chat.message channel.chat.notification
 
   @doc """
   Starts the connection to the EventSub WebSocket server.
@@ -156,14 +159,22 @@ defmodule TwitchEventSub do
 
     session_id = get_in(payload, ["session", "id"])
     client_id = state.client_id
-    user_id = state.user_id
     access_token = state.access_token
+    user_id = state.user_id
+    channel_ids = state.channel_ids
     subscriptions = Map.get(state, :subscriptions, @default_subs)
 
     # TODO: Supervised task anyone?
-    Enum.each(subscriptions, fn type ->
-      Client.create_subscription(type, user_id, session_id, client_id, access_token)
-    end)
+    for channel_id <- channel_ids, type <- subscriptions do
+      TwitchClient.create_subscription(
+        type,
+        channel_id,
+        user_id,
+        session_id,
+        client_id,
+        access_token
+      )
+    end
   end
 
   # ## Keepalive message
@@ -241,7 +252,7 @@ defmodule TwitchEventSub do
 
     type
     |> TwitchEventSub.Events.from_payload(payload)
-    |> add_delayed_event()
+    |> tap(&add_delayed_event/1)
     |> state.handler.handle_event()
   end
 
@@ -364,7 +375,6 @@ defmodule TwitchEventSub do
   defp add_delayed_event(%TwitchEventSub.Events.AdBreakBegin{} = event) do
     ad_break_end = struct(TwitchEventSub.Events.AdBreakEnd, Map.from_struct(event))
     Process.send_after(self(), {:delayed_event, ad_break_end}, event.duration_seconds * 1000)
-    event
   end
 
   defp add_delayed_event(%TwitchEventSub.Events.ShoutoutCreate{} = event) do
@@ -380,9 +390,8 @@ defmodule TwitchEventSub do
 
     Process.send_after(self(), {:delayed_event, cooldown_end}, cooldown_duration)
     Process.send_after(self(), {:delayed_event, cooldown_target_end}, cooldown_target_duration)
-
-    event
   end
 
-  defp add_delayed_event(event), do: event
+  # No-op for any other events.
+  defp add_delayed_event(_event), do: :ok
 end
