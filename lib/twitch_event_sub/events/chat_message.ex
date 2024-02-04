@@ -2,22 +2,7 @@ defmodule TwitchEventSub.Events.ChatMessage do
   @moduledoc """
   A chat message.
   """
-
-  defmodule Fragments do
-    defmodule Cheermote do
-      defstruct [:prefix, :bits, :tier]
-    end
-
-    defmodule Emote do
-      defstruct [:id, :emote_set_id, :owner_id, :format]
-    end
-
-    defmodule Mention do
-      defstruct [:user_id, :user_name, :user_login]
-    end
-  end
-
-  use TwitchEventSub.Event,
+  use TwitchEventSub.Fields,
     fields: [
       :broadcaster_id,
       :broadcaster_name,
@@ -56,15 +41,3 @@ defmodule TwitchEventSub.Events.ChatMessage do
       :channel_points_custom_reward_id
     ]
 end
-
-# defmodule TwitchEventSub.Events.Message do
-#   @type t :: %__MODULE__{text: String.t(), fragments: Fragments.t()}
-#   @enforce_keys [:text]
-#   defstruct [:text, :fragments]
-# end
-
-# defmodule TwitchEventSub.Events.Message.Fragments do
-#   @type t :: %__MODULE__{type: String.t(), fragments: Fragments.t()}
-#   @enforce_keys [:text]
-#   defstruct [:text, :fragments]
-# end

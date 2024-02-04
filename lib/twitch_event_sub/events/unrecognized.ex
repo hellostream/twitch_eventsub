@@ -1,6 +1,6 @@
 defmodule TwitchEventSub.Events.Unrecognized do
   @moduledoc false
-  use TwitchEventSub.Event,
+  use TwitchEventSub.Fields,
     fields: [
       :msg
     ]

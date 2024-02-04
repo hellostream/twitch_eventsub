@@ -1,6 +1,6 @@
 defmodule TwitchEventSub.Events.AdBreakBegin do
   @moduledoc false
-  use TwitchEventSub.Event,
+  use TwitchEventSub.Fields,
     fields: [
       :broadcaster_id,
       :broadcaster_name,

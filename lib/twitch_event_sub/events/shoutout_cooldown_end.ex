@@ -1,6 +1,6 @@
 defmodule TwitchEventSub.Events.ShoutoutCooldownEnd do
   @moduledoc false
-  use TwitchEventSub.Event,
+  use TwitchEventSub.Fields,
     fields: [
       :cooldown_ends_at,
       :broadcaster_id,

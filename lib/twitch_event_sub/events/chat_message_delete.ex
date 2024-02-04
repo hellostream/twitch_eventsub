@@ -1,5 +1,7 @@
-defmodule TwitchEventSub.Events.SubGift do
-  @moduledoc false
+defmodule TwitchEventSub.Events.ChatMessageDelete do
+  @moduledoc """
+  A chat message was deleted.
+  """
   use TwitchEventSub.Fields,
     fields: [
       :broadcaster_id,
@@ -8,9 +10,6 @@ defmodule TwitchEventSub.Events.SubGift do
       :user_id,
       :user_login,
       :user_name,
-      :total,
-      :tier,
-      :cumulative_total,
-      :is_anon?
+      :message_id
     ]
 end

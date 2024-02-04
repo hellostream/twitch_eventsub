@@ -1,6 +1,6 @@
 defmodule TwitchEventSub.Events.Sub do
   @moduledoc false
-  use TwitchEventSub.Event,
+  use TwitchEventSub.Fields,
     fields: [
       :broadcaster_id,
       :broadcaster_name,

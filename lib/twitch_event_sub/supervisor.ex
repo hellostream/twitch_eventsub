@@ -15,7 +15,7 @@ defmodule TwitchEventSub.Supervisor do
   @impl true
   def init(opts) do
     children = [
-      {TwitchEventSub, opts}
+      {TwitchEventSub.Socket, opts}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
