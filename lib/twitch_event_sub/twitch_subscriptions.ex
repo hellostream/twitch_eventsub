@@ -1,12 +1,9 @@
-defmodule TwitchEventSub.TwitchClient do
+defmodule TwitchEventSub.TwitchSubscriptions do
   @moduledoc """
   Twitch API.
   """
 
   require Logger
-
-  @config Application.compile_env(:twitch_eventsub, __MODULE__, [])
-  @base_url Keyword.get(@config, :base_url, "https://api.twitch.tv/helix")
 
   @subscriptions %{
     "channel.update" => 2,
@@ -71,99 +68,19 @@ defmodule TwitchEventSub.TwitchClient do
   @subscription_types Map.keys(@subscriptions)
 
   @doc """
-  List all of the available subscription types.
-  """
-  def subscription_types, do: @subscription_types
-
-  @doc """
-  `Req` request (client?) for Twitch API requests.
-  """
-  def client(client_id, access_token) do
-    headers =
-      %{
-        "client-id" => client_id,
-        "content-type" => "application/json"
-      }
-
-    auth = access_token && {:bearer, access_token}
-
-    Req.new(base_url: @base_url, headers: headers, auth: auth)
-  end
-
-  @doc """
-  Revoke an access token.
-  """
-  def revoke_token!(client_id, token) do
-    params = [client_id: client_id, token: token]
-    Req.post!("https://id.twitch.tv/oauth2/revoke", form: params)
-  end
-
-  @doc """
   Create an eventsub subscription using websockets.
-  See: https://dev.twitch.tv/docs/api/reference/#create-eventsub-subscription
   """
-  def create_subscription(type, channel_id, user_id, session_id, client_id, access_token)
-      when type in @subscription_types do
-    params = %{
-      "type" => type,
-      "version" => Map.fetch!(@subscriptions, type),
-      "condition" => condition(type, channel_id, user_id),
-      "transport" => %{
-        "method" => "websocket",
-        "session_id" => session_id
-      }
-    }
-
-    resp =
-      client(client_id, access_token)
-      |> Req.post(url: "/eventsub/subscriptions", json: params)
-
-    case resp do
-      {:ok, %{status: 202, headers: _headers, body: body}} ->
-        Logger.debug(
-          "[TwitchEventSub.TwitchClient] #{type} subscription created:\n#{inspect(body)}"
-        )
-
-        {:ok, body}
-
-      {:ok, %{status: 429, headers: %{"ratelimit-reset" => resets_at}}} ->
-        Logger.warning("[TwitchEventSub.TwitchClient] rate-limited; resets at #{resets_at}")
-        {:error, resp}
-
-      {:ok, %{status: _status} = resp} ->
-        Logger.error("[TwitchEventSub.TwitchClient] unexpected response: #{inspect(resp)}")
-        {:error, resp}
-
-      {:error, error} ->
-        Logger.error("[TwitchEventSub.TwitchClient] error making resquest: #{inspect(error)}")
-        {:error, error}
-    end
+  def create(auth, type, channel_id, user_id, session_id) when type in @subscription_types do
+    version = Map.fetch!(@subscriptions, type)
+    condition = condition(type, channel_id, user_id)
+    TwitchAPI.create_eventsub_websocket_subscription(auth, session_id, type, version, condition)
   end
 
   @doc """
   List all eventsub subscriptions.
   """
-  def list_subscriptions(client_id, access_token, params \\ %{}) do
-    resp =
-      client(client_id, access_token)
-      |> Req.get(url: "/eventsub/subscriptions", json: params)
-
-    case resp do
-      {:ok, %{status: 200, headers: _headers, body: body}} ->
-        {:ok, body}
-
-      {:ok, %{status: 429, headers: %{"ratelimit-reset" => resets_at}}} ->
-        Logger.warning("[TwitchEventSub.TwitchClient] rate-limited; resets at #{resets_at}")
-        {:error, resp}
-
-      {:ok, %{status: _status} = resp} ->
-        Logger.error("[TwitchEventSub.TwitchClient] unexpected response: #{inspect(resp)}")
-        {:error, resp}
-
-      {:error, error} ->
-        Logger.error("[TwitchEventSub.TwitchClient] error making resquest: #{inspect(error)}")
-        {:error, error}
-    end
+  def list(auth, params \\ %{}) do
+    TwitchAPI.list_eventsub_subscriptions(auth, params)
   end
 
   # ----------------------------------------------------------------------------

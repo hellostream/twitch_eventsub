@@ -23,7 +23,8 @@ defmodule TwitchEventSub.MixProject do
     [
       {:jason, "~> 1.4"},
       {:req, "~> 0.4"},
-      {:websockex, "~> 0.4.3"}
+      {:websockex, "~> 0.4.3"},
+      {:hello_twitch_api, "~> 0.1.0"}
     ]
   end
 end

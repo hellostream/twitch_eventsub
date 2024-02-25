@@ -4,7 +4,7 @@ defmodule TwitchEventSub.Socket do
 
   require Logger
 
-  alias TwitchEventSub.TwitchClient
+  alias TwitchEventSub.TwitchSubscriptions
 
   @default_url "wss://eventsub.wss.twitch.tv/ws"
 
@@ -60,6 +60,10 @@ defmodule TwitchEventSub.Socket do
         message: "missing one of the required options, got: #{inspect(Keyword.keys(opts))}"
     end
 
+    {client_id, opts} = Keyword.pop!(opts, :client_id)
+    {access_token, opts} = Keyword.pop!(opts, :access_token)
+    auth = TwitchAPI.Auth.new(client_id, access_token)
+
     keepalive = Keyword.get(opts, :keepalive_timeout, @default_keepalive_timeout)
     query = URI.encode_query(keepalive_timeout_seconds: keepalive)
 
@@ -73,7 +77,7 @@ defmodule TwitchEventSub.Socket do
     state =
       opts
       |> Keyword.take(@allowed_opts)
-      |> Keyword.merge(url: url)
+      |> Keyword.merge(url: url, auth: auth)
       |> Map.new()
 
     WebSockex.start_link(url, __MODULE__, state)
@@ -157,22 +161,20 @@ defmodule TwitchEventSub.Socket do
   defp handle_message(%{"message_type" => "session_welcome"}, payload, state) do
     Logger.info("[TwitchEventSub] connected")
 
-    session_id = get_in(payload, ["session", "id"])
-    client_id = state.client_id
-    access_token = state.access_token
-    user_id = state.user_id
-    channel_ids = state.channel_ids
     subscriptions = Map.get(state, :subscriptions, @default_subs)
+    auth = state.auth
+    channel_ids = state.channel_ids
+    user_id = state.user_id
+    session_id = get_in(payload, ["session", "id"])
 
     # TODO: Supervised task anyone?
     for channel_id <- channel_ids, type <- subscriptions do
-      TwitchClient.create_subscription(
+      TwitchSubscriptions.create(
+        auth,
         type,
         channel_id,
         user_id,
-        session_id,
-        client_id,
-        access_token
+        session_id
       )
     end
   end
@@ -248,7 +250,7 @@ defmodule TwitchEventSub.Socket do
          %{"event" => payload},
          state
        ) do
-    Logger.debug("[TwitchEventSub] got notification: " <> inspect(payload, pretty: true))
+    Logger.debug("[TwitchEventSub] got #{type} notification: " <> inspect(payload, pretty: true))
 
     type
     |> TwitchEventSub.Events.from_payload(payload)

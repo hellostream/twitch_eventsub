@@ -4,6 +4,8 @@ defmodule TwitchEventSub.Events do
 
   @events %{
     "channel.ad_break.begin" => TwitchEventSub.Events.AdBreakBegin,
+    "channel.channel_points_custom_reward_redemption.add" =>
+      TwitchEventSub.Events.ChannelPointsRedemption,
     "channel.follow" => TwitchEventSub.Events.Follow,
     "channel.shoutout.create" => TwitchEventSub.Events.ShoutoutCreate,
     "channel.shoutout.receive" => TwitchEventSub.Events.ShoutoutReceive,
@@ -12,6 +14,7 @@ defmodule TwitchEventSub.Events do
     "channel.chat.message_delete" => TwitchEventSub.Events.ChatMessageDelete,
     "channel.chat.notification" => TwitchEventSub.Events.ChatNotification,
     "channel.chat.message" => TwitchEventSub.Events.ChatMessage,
+    "channel.cheer" => TwitchEventSub.Events.Cheer,
     "channel.subscribe" => TwitchEventSub.Events.Sub,
     "channel.subscription.gift" => TwitchEventSub.Events.SubGift,
     "channel.subscription.message" => TwitchEventSub.Events.SubMessage
@@ -39,6 +42,7 @@ defmodule TwitchEventSub.Events do
   @fields %{
     "announcement" => :announcement,
     "badges" => :badges,
+    "bits" => :bits,
     "bits_badge_tier" => :bits_badge_tier,
     "broadcaster_user_id" => :broadcaster_id,
     "broadcaster_user_name" => :broadcaster_name,
@@ -80,6 +84,7 @@ defmodule TwitchEventSub.Events do
     "is_gift" => :is_gift?,
     "is_prime" => :is_prime?,
     "mention" => :mention,
+    "message" => :message,
     "message_id" => :message_id,
     "message_type" => :message_type,
     "moderator_user_id" => :moderator_id,
@@ -91,17 +96,20 @@ defmodule TwitchEventSub.Events do
     "prime_paid_upgrade" => :prime_paid_upgrade,
     "profile_image_url" => :profile_image_url,
     "raid" => :raid,
-    "reply" => :reply,
     "recipient_user_id" => :recipient_id,
     "recipient_user_login" => :recipient_login,
     "recipient_user_name" => :recipient_name,
+    "redeemed_at" => :redeemed_at,
+    "reply" => :reply,
     "requester_user_id" => :requester_id,
     "requester_user_login" => :requester_login,
     "requester_user_name" => :requester_name,
     "resub" => :resub,
+    "reward" => :reward,
     "set_id" => :set_id,
     "started_at" => :started_at,
     "streak_months" => :streak_months,
+    "status" => :status,
     "sub" => :sub,
     "sub_gift" => :sub_gift,
     "sub_tier" => :tier,
@@ -119,9 +127,14 @@ defmodule TwitchEventSub.Events do
     "type" => :type,
     "unraid" => :unraid,
     "user_id" => :user_id,
+    "user_input" => :user_input,
     "user_login" => :user_login,
     "user_name" => :user_name,
-    "viewer_count" => :viewer_count
+    "viewer_count" => :viewer_count,
+    ["reward", "cost"] => :cost,
+    ["reward", "id"] => :reward_id,
+    ["reward", "prompt"] => :reqard_prompt,
+    ["reward", "title"] => :reward_title
   }
 
   @field_names Map.keys(@fields)
@@ -290,6 +303,11 @@ defmodule TwitchEventSub.Events do
     {field(key), prime_paid_upgrade}
   end
 
+  defp payload_map({"redeemed_at" = key, %{} = val}) do
+    {:ok, redeemed_at, _} = DateTime.from_iso8601(val)
+    {field(key), redeemed_at}
+  end
+
   defp payload_map({"reply" = key, %{} = val}) do
     reply =
       val
@@ -319,6 +337,20 @@ defmodule TwitchEventSub.Events do
       |> then(&struct(TwitchEventSub.Fields.Message.Resub, &1))
 
     {field(key), reply}
+  end
+
+  defp payload_map({"reward", %{} = val}) do
+    Enum.map(val, fn {k, v} ->
+      payload_map({["reward", k], v})
+    end)
+  end
+
+  defp payload_map({["reward", "cost"] = key, val}) when is_binary(val) do
+    {field(key), String.to_integer(val)}
+  end
+
+  defp payload_map({["reward", _] = key, val}) when is_binary(val) do
+    {field(key), val}
   end
 
   defp payload_map({"started_at" = key, val}) do
