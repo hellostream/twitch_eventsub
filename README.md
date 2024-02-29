@@ -80,7 +80,7 @@ config :my_app,
 Create a bot module to deal with chat messages or events:
 
 ```elixir
-defmodule MyApplication.TwitchEventHandler do
+defmodule MyApp.TwitchHandler do
   use TwitchEventSub
 
   alias TwitchEventSub.Events.Follow
@@ -100,9 +100,8 @@ Examples of adding it to your application's supervision tree below.
 
 ```elixir
 # lib/my_app/application.ex in `start/2` function:
-defmodule MyApp.TwitchEventHandler do
+defmodule MyApp.Application do
   # ...
-  @impl true
   def start(_type, _args) do
     children = [
       # ... existing stuff ...
