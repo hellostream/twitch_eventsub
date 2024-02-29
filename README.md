@@ -80,7 +80,7 @@ config :my_app,
 Create a bot module to deal with chat messages or events:
 
 ```elixir
-defmodule MyApp.TwitchHandler do
+defmodule MyApp.TwitchEventHandler do
   use TwitchEventSub
 
   alias TwitchEventSub.Events.Follow
