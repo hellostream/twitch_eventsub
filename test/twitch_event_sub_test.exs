@@ -6,13 +6,13 @@ defmodule TwitchEventSubTest do
     use TwitchEventSub
 
     @impl true
-    def handle_event(%TwitchEventSub.Events.ChatMessage{} = event) do
-      "Hello #{event.channel}"
+    def handle_event("channel.subscribe", event) do
+      "Hello #{event["broadcaster_user_login"]}"
     end
   end
 
   test "test handler implementation" do
-    event = %TwitchEventSub.Events.ChatMessage{channel: "foo"}
-    assert TestHandler.handle_event(event) == "Hello foo"
+    event = %{"broadcaster_user_login" => "foo"}
+    assert TestHandler.handle_event("channel.subscribe", event) == "Hello foo"
   end
 end
