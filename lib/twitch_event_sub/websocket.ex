@@ -15,7 +15,7 @@ defmodule TwitchEventSub.WebSocket do
   @impl true
   def init(opts) do
     children = [
-      {TwitchEventSub.WebSocketClient, opts}
+      {TwitchEventSub.WebSocket.Client, opts}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

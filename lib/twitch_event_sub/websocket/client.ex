@@ -1,10 +1,10 @@
-defmodule TwitchEventSub.WebSocketClient do
+defmodule TwitchEventSub.WebSocket.Client do
   @moduledoc false
   use WebSockex
 
   require Logger
 
-  alias TwitchEventSub.TwitchSubscriptions
+  alias TwitchEventSub.Subscriptions
 
   @default_url "wss://eventsub.wss.twitch.tv/ws"
 
@@ -167,9 +167,8 @@ defmodule TwitchEventSub.WebSocketClient do
     user_id = state.user_id
     session_id = get_in(payload, ["session", "id"])
 
-    # TODO: Supervised task anyone?
     for channel_id <- channel_ids, type <- subscriptions do
-      TwitchSubscriptions.create(
+      Subscriptions.create(
         auth,
         type,
         channel_id,
