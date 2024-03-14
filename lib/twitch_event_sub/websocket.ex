@@ -1,4 +1,4 @@
-defmodule TwitchEventSub.Supervisor do
+defmodule TwitchEventSub.WebSocket do
   @moduledoc """
   TwitchEventSub is a library for connecting to Twitch chat with Elixir.
   """
@@ -15,7 +15,7 @@ defmodule TwitchEventSub.Supervisor do
   @impl true
   def init(opts) do
     children = [
-      {TwitchEventSub.Socket, opts}
+      {TwitchEventSub.WebSocketClient, opts}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

@@ -80,13 +80,17 @@ config :my_app,
 Create a bot module to deal with chat messages or events:
 
 ```elixir
+<<<<<<< HEAD
 defmodule MyApp.TwitchEventHandler do
+||||||| parent of 9706251 (simplifying)
+defmodule MyApplication.TwitchEventHandler do
+=======
+defmodule MyApp.TwitchEvents do
+>>>>>>> 9706251 (simplifying)
   use TwitchEventSub
 
-  alias TwitchEventSub.Events.Follow
-
   @impl true
-  def handle_event(%Follow{} = event) do
+  def handle_event("channel.follow", event) do
     # TODO: Do something when you get a follow?
   end
 end
@@ -94,7 +98,7 @@ end
 
 ### Starting
 
-Examples of adding it to your application's supervision tree below.
+Examples of adding Twitch EventSub websocket to your application's supervision tree below.
 
 ##### Handler example:
 
@@ -106,7 +110,7 @@ defmodule MyApp.Application do
     children = [
       # ... existing stuff ...
       # Add the bot.
-      {TwitchEventSub.Supervisor, Application.fetch_env!(:my_app, :event_sub)}
+      {TwitchEventSub.WebSocket, Application.fetch_env!(:my_app, :event_sub)}
     ]
 
     # ...
