@@ -21,11 +21,11 @@ defmodule TwitchEventSub.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:hello_twitch_api, "~> 0.1.0"},
       {:jason, "~> 1.4"},
       {:req, "~> 0.4"},
-      {:websockex, "~> 0.4.3"},
-      {:hello_twitch_api, "~> 0.1.0"},
-      {:plug, "~> 1.15", optional: true}
+      {:plug, "~> 1.15", optional: true},
+      {:websockex, "~> 0.4.3", optional: true}
     ]
   end
 end
