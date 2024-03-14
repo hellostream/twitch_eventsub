@@ -3,12 +3,9 @@ if Code.ensure_loaded?(Websockex) do
     @moduledoc false
     use WebSockex
 
-    require Logger
-
     alias TwitchEventSub.Subscriptions
 
-    @default_url "wss://eventsub.wss.twitch.tv/ws"
-    @default_keepalive_timeout 30
+    require Logger
 
     @default_subs ~w[
       channel.chat.message channel.chat.notification
@@ -24,10 +21,6 @@ if Code.ensure_loaded?(Websockex) do
 
     # NOTE: `extension.bits_transaction.create` requires `extension_client_id`.
 
-    # The options accepted (and required) by the websocket client.
-    @required_opts ~w[user_id client_id access_token handler channel_ids]a
-    @allowed_opts @required_opts ++ ~w[subscriptions]
-
     @opaque state :: %{
               auth: TwitchAPI.Auth.t(),
               channel_ids: [String.t()],
@@ -38,59 +31,14 @@ if Code.ensure_loaded?(Websockex) do
               user_id: String.t()
             }
 
-    @doc """
-    Starts the connection to the EventSub WebSocket server.
-
-    ## Options
-
-     * `:client_id` - Twitch app client id.
-     * `:access_token` - Twitch app access token with required scopes for the
-        provided `:subscriptions`.
-     * `:subscriptions` - The subscriptions for EventSub.
-     * `:url` - A websocket URL to connect to. Defaults to "wss://eventsub.wss.twitch.tv/ws".
-     * `:keepalive_timeout` - The keepalive timeout in seconds. Specifying an invalid,
-        but numeric value will return the nearest acceptable value. Defaults to `10`.
-     * `:start?` - A boolean value of whether or not to start the eventsub socket.
-
-    """
     @spec start_link(keyword()) :: GenServer.on_start()
     def start_link(opts) do
       if Keyword.get(opts, :start?, true) do
-        do_start(opts)
+        Logger.info("[TwitchEventSub] connecting...")
+        WebSockex.start_link(url, __MODULE__, Map.new(opts))
       else
         :ignore
       end
-    end
-
-    defp do_start(opts) do
-      Logger.info("[TwitchEventSub] connecting...")
-
-      if not Enum.all?(@required_opts, &Keyword.has_key?(opts, &1)) do
-        raise ArgumentError,
-          message: "missing one of the required options, got: #{inspect(Keyword.keys(opts))}"
-      end
-
-      {client_id, opts} = Keyword.pop!(opts, :client_id)
-      {access_token, opts} = Keyword.pop!(opts, :access_token)
-      auth = TwitchAPI.Auth.new(client_id, access_token)
-
-      keepalive = Keyword.get(opts, :keepalive_timeout, @default_keepalive_timeout)
-      query = URI.encode_query(keepalive_timeout_seconds: keepalive)
-
-      url =
-        opts
-        |> Keyword.get(:url, @default_url)
-        |> URI.parse()
-        |> URI.append_query(query)
-        |> URI.to_string()
-
-      state =
-        opts
-        |> Keyword.take(@allowed_opts)
-        |> Keyword.merge(url: url, auth: auth)
-        |> Map.new()
-
-      WebSockex.start_link(url, __MODULE__, state)
     end
 
     # ----------------------------------------------------------------------------

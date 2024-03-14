@@ -7,7 +7,7 @@ if Code.ensure_loaded?(Plug) do
 
     For the plug to work, you need to add the `:raw_body` assign to the `conn`
     when your plugs read the body. We provide a custom body reader for you in
-    `TwitchEventSub.Plug.BodyReader`.
+    `TwitchEventSub.Plug.BodyReader` and you should use this to read the body.
 
     If you are using `Phoenix` (and `Plug.Parsers`), then it would look something
     like this:
@@ -57,7 +57,7 @@ if Code.ensure_loaded?(Plug) do
 
     defp valid_twitch_request?(conn, opts) do
       with(
-        secret <- Keyword.fetch!(opts, :secret),
+        secret <- Keyword.fetch!(opts, :webhook_secret),
         [msg_id] <- Plug.Conn.get_req_header(conn, "twitch-eventsub-message-id"),
         [timestamp] <- Plug.Conn.get_req_header(conn, "twitch-eventsub-message-timestamp"),
         [signature] <- Plug.Conn.get_req_header(conn, "twitch-eventsub-message-signature")

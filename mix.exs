@@ -25,7 +25,8 @@ defmodule TwitchEventSub.MixProject do
       {:jason, "~> 1.4"},
       {:req, "~> 0.4"},
       {:plug, "~> 1.15", optional: true},
-      {:websockex, "~> 0.4.3", optional: true}
+      {:websockex, "~> 0.4.3", optional: true},
+      {:ex_doc, "~> 0.31.2", only: [:dev], runtime: false}
     ]
   end
 end
