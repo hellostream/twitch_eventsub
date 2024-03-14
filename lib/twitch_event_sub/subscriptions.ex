@@ -1,4 +1,4 @@
-defmodule TwitchEventSub.TwitchSubscriptions do
+defmodule TwitchEventSub.Subscriptions do
   @moduledoc """
   Twitch API.
   """

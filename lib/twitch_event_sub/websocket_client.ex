@@ -1,4 +1,4 @@
-defmodule TwitchEventSub.Socket do
+defmodule TwitchEventSub.WebSocketClient do
   @moduledoc false
   use WebSockex
 
@@ -37,7 +37,7 @@ defmodule TwitchEventSub.Socket do
    * `:access_token` - Twitch app access token with required scopes for the
       provided `:subscriptions`.
    * `:subscriptions` - The subscriptions for EventSub.
-   * `:url` - A websocket URL to connect to. `Defaults to "wss://eventsub.wss.twitch.tv/ws"`.
+   * `:url` - A websocket URL to connect to. Defaults to "wss://eventsub.wss.twitch.tv/ws".
    * `:keepalive_timeout` - The keepalive timeout in seconds. Specifying an invalid,
       but numeric value will return the nearest acceptable value. Defaults to `10`.
    * `:start?` - A boolean value of whether or not to start the eventsub socket.
@@ -251,11 +251,8 @@ defmodule TwitchEventSub.Socket do
          state
        ) do
     Logger.debug("[TwitchEventSub] got #{type} notification: " <> inspect(payload, pretty: true))
-
-    type
-    |> TwitchEventSub.Events.from_payload(payload)
-    |> tap(&add_delayed_event/1)
-    |> state.handler.handle_event()
+    add_delayed_event(type, payload)
+    state.handler.handle_event(type, payload)
   end
 
   # ## Reconnect message
@@ -374,26 +371,33 @@ defmodule TwitchEventSub.Socket do
   # property, but we do not have an `AdBreakEnd` event.
   # So, we can use the ad-break duration to create our own `AdBreakEnd` event.
   # This is exactly what we do.
-  defp add_delayed_event(%TwitchEventSub.Events.AdBreakBegin{} = event) do
-    ad_break_end = struct(TwitchEventSub.Events.AdBreakEnd, Map.from_struct(event))
-    Process.send_after(self(), {:delayed_event, ad_break_end}, event.duration_seconds * 1000)
+  defp add_delayed_event("channel.ad_break.begin", event) do
+    Process.send_after(
+      self(),
+      {:delayed_event, "channel.ad_break.end", event},
+      event.duration_seconds * 1000
+    )
   end
 
-  defp add_delayed_event(%TwitchEventSub.Events.ShoutoutCreate{} = event) do
-    cooldown_end = struct(TwitchEventSub.Events.ShoutoutCooldownEnd, Map.from_struct(event))
-
-    cooldown_target_end =
-      struct(TwitchEventSub.Events.ShoutoutCooldownTargetEnd, Map.from_struct(event))
-
+  defp add_delayed_event("channel.shoutout.create", event) do
     cooldown_duration = DateTime.diff(event.cooldown_ends_at, DateTime.utc_now(), :millisecond)
 
     cooldown_target_duration =
       DateTime.diff(event.target_cooldown_ends_at, DateTime.utc_now(), :millisecond)
 
-    Process.send_after(self(), {:delayed_event, cooldown_end}, cooldown_duration)
-    Process.send_after(self(), {:delayed_event, cooldown_target_end}, cooldown_target_duration)
+    Process.send_after(
+      self(),
+      {:delayed_event, "channel.shoutout.cooldown.end", event},
+      cooldown_duration
+    )
+
+    Process.send_after(
+      self(),
+      {:delayed_event, "channel.shoutout.cooldown.to_broadcaster.end", event},
+      cooldown_target_duration
+    )
   end
 
   # No-op for any other events.
-  defp add_delayed_event(_event), do: :ok
+  defp add_delayed_event(_type, _event), do: :ok
 end
