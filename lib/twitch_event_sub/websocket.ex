@@ -39,7 +39,7 @@ defmodule TwitchEventSub.WebSocket do
 
   @typedoc """
   The subscriptions for EventSub. Optional. Defaults to a bunch.
-  Check `TwitchEventSub.Websocket.Client`  module attributes for the defaults.
+  Check `TwitchEventSub.Websocket.Client` for the defaults.
   """
   @type subscriptions :: [String.t()]
 
