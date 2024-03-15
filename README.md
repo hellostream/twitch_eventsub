@@ -91,13 +91,7 @@ config :my_app,
 Create a bot module to deal with chat messages or events:
 
 ```elixir
-<<<<<<< HEAD
-defmodule MyApp.TwitchEventHandler do
-||||||| parent of 9706251 (simplifying)
-defmodule MyApplication.TwitchEventHandler do
-=======
 defmodule MyApp.TwitchEvents do
->>>>>>> 9706251 (simplifying)
   use TwitchEventSub
 
   @impl true
