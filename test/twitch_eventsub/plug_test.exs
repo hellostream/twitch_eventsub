@@ -13,7 +13,7 @@ defmodule TwitchEventSub.PlugTest do
     end
   end
 
-  @opts [handler: TestHandler, secret: "somesecret"]
+  @opts [handler: TestHandler, webhook_secret: "somesecret"]
 
   @msg_id "123abc"
   @timestamp "2030-01-01T12:31:00Z"

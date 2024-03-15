@@ -1,6 +1,6 @@
 # TwitchEventSub
 
-Twitch EventSub connection for Elixir.
+Twitch EventSub for Elixir.
 
 ## Installation
 
@@ -40,16 +40,13 @@ your actions found here [https://dev.twitch.tv/docs/authentication/scopes](https
  * `:handler` - A module that `use`s `TwitchEventSub` and implements the `TwitchEventSub.Handler` behaviour.
  * `:client_id` - The client ID of the application you used for the token.
  * `:access_token` - The OAuth token you generated with the correct scopes for your subscriptions.
- * `:keepalive_timeout` - Optional. The keepalive timeout in seconds. Specifying an invalid,
-   but numeric value will return the nearest acceptable value. Defaults to `10`.
- * `:start?` - Optional. A boolean value of whether or not to start the eventsub socket.
-   Defaults to `false` if there are no `event_sub` config options.
  * `:subscriptions` - Optional. The list of subscriptions to create. See below for more info.
    Defaults to:
 
 ```elixir
 # Default subscriptions.
 ~w[
+  channel.chat.message channel.chat.notification
   channel.ad_break.begin channel.cheer channel.follow channel.subscription.end
   channel.channel_points_custom_reward_redemption.add
   channel.channel_points_custom_reward_redemption.update
@@ -61,6 +58,19 @@ your actions found here [https://dev.twitch.tv/docs/authentication/scopes](https
 ]
 ```
 
+#### Config options (Websocket-specific)
+
+ * `:keepalive_timeout` - Optional. The keepalive timeout in seconds. Specifying an invalid,
+   but numeric value will return the nearest acceptable value. Defaults to `10`.
+ * `:start?` - Optional. A boolean value of whether or not to start the eventsub socket.
+   Defaults to `false` if there are no `event_sub` config options.
+
+#### Config options (Webhook-specific)
+
+ * `:webhook_secret` - The secret to be used when creating and receiving subscriptions.
+
+#### Config file example
+
 ```elixir
 # config/runtime.exs
 
@@ -69,9 +79,10 @@ config :my_app,
   event_sub: [
     user_id: "123456",
     channels: ["mychannel"],
-    handler: MyApp.TwitchEventHandler,
-    client_id: System.get_env("TWITCH_CLIENT_ID"),
-    access_token: System.get_env("TWITCH_ACCESS_TOKEN")
+    handler: MyApp.TwitchEvents,
+    webhook_secret: System.fetch_env!("TWITCH_WEBHOOK_SECRET"),
+    client_id: System.fetch_env!("TWITCH_CLIENT_ID"),
+    access_token: System.fetch_env!("TWITCH_ACCESS_TOKEN")
   ]
 ```
 
@@ -96,11 +107,9 @@ defmodule MyApp.TwitchEvents do
 end
 ```
 
-### Starting
+### Starting Websocket
 
 Examples of adding Twitch EventSub websocket to your application's supervision tree below.
-
-##### Handler example:
 
 ```elixir
 # lib/my_app/application.ex in `start/2` function:

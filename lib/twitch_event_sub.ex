@@ -1,6 +1,18 @@
 defmodule TwitchEventSub do
   @moduledoc """
   The behaviour and implementation of EventSub.
+
+  ## Example implementation
+
+      defmodule ExampleHandler do
+        use TwitchEventSub
+
+        @impl TwitchEventSub
+        def handle_event("channel.follow", event) do
+          # Do something with a follow.
+        end
+      end
+
   """
 
   require Logger
