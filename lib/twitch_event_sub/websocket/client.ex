@@ -1,4 +1,4 @@
-if Code.ensure_loaded?(Websockex) do
+if Code.ensure_loaded?(WebSockex) do
   defmodule TwitchEventSub.WebSocket.Client do
     @moduledoc false
     use WebSockex
@@ -7,8 +7,11 @@ if Code.ensure_loaded?(Websockex) do
 
     require Logger
 
+    # NOTE: `channel.chat.message` is still better in IRC, because we get more info.
+    # This is why we are not including it in the defaults.
+
     @default_subs ~w[
-      channel.chat.message channel.chat.notification
+      channel.chat.notification
       channel.ad_break.begin channel.cheer channel.follow channel.subscription.end
       channel.channel_points_custom_reward_redemption.add
       channel.channel_points_custom_reward_redemption.update
@@ -19,22 +22,22 @@ if Code.ensure_loaded?(Websockex) do
       stream.online stream.offline
     ]
 
-    # NOTE: `extension.bits_transaction.create` requires `extension_client_id`.
+    # NOTE: `extension.bits_transaction.create` requires `extension_client_id`
+    # in the conditions, so it should be added to the `:conditions` option.
 
     @opaque state :: %{
               auth: TwitchAPI.Auth.t(),
-              channel_ids: [String.t()],
               handler: module(),
               keepalive_timeout: pos_integer(),
               subscriptions: [String.t()],
-              url: String.t(),
-              user_id: String.t()
+              url: String.t()
             }
 
     @spec start_link(keyword()) :: GenServer.on_start()
     def start_link(opts) do
       if Keyword.get(opts, :start?, true) do
         Logger.info("[TwitchEventSub] connecting...")
+        url = Keyword.fetch!(opts, :url)
         WebSockex.start_link(url, __MODULE__, Map.new(opts))
       else
         :ignore
@@ -118,21 +121,11 @@ if Code.ensure_loaded?(Websockex) do
     #
     defp handle_message(%{"message_type" => "session_welcome"}, payload, state) do
       Logger.info("[TwitchEventSub] connected")
-
-      subscriptions = Map.get(state, :subscriptions, @default_subs)
+      %{"session" => %{"id" => session_id}} = payload
       auth = state.auth
-      channel_ids = state.channel_ids
-      user_id = state.user_id
-      session_id = get_in(payload, ["session", "id"])
 
-      for channel_id <- channel_ids, type <- subscriptions do
-        Subscriptions.create(
-          auth,
-          type,
-          channel_id,
-          user_id,
-          session_id
-        )
+      for subscription <- state.subscriptions do
+        Subscriptions.create(:websocket, auth, session_id, subscription)
       end
     end
 
