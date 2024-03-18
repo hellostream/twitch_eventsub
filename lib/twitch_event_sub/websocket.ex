@@ -5,6 +5,8 @@ defmodule TwitchEventSub.WebSocket do
   """
   use Supervisor
 
+  alias TwitchEventSub.Subscriptions.Subscription
+
   @typedoc """
   Twitch app access token with required scopes for the provided `subscriptions`
   """
@@ -41,7 +43,7 @@ defmodule TwitchEventSub.WebSocket do
   The subscriptions for EventSub. Optional. Defaults to a bunch.
   Check `TwitchEventSub.Websocket.Client` for the defaults.
   """
-  @type subscriptions :: [String.t()]
+  @type subscriptions :: [%{condition: map()}]
 
   @typedoc """
   A websocket URL to connect to. Optional.
@@ -100,10 +102,15 @@ defmodule TwitchEventSub.WebSocket do
       |> URI.append_query(query)
       |> URI.to_string()
 
+    subscriptions =
+      opts
+      |> Keyword.fetch!(:subscriptions)
+      |> Enum.map(&Subscription.new/1)
+
     opts =
       opts
       |> Keyword.take(@allowed_opts)
-      |> Keyword.merge(url: url, auth: auth)
+      |> Keyword.merge(url: url, auth: auth, subscriptions: subscriptions)
 
     Supervisor.start_link(__MODULE__, opts)
   end

@@ -194,7 +194,7 @@ if Code.ensure_loaded?(WebSockex) do
     #         }
     #       }
     #     }
-    # 
+    #
     defp handle_message(%{"message_type" => "notification"} = meta, %{"event" => event}, state) do
       %{"subscription_type" => type} = meta
       Logger.debug("[TwitchEventSub] notification #{type}: #{inspect(event, pretty: true)}")
