@@ -507,14 +507,22 @@ defmodule TwitchEventSub.Subscriptions.Subscription do
   @doc """
   Create a new subscription struct.
   """
-  @spec new(%{condition: map(), method: method(), name: name(), version: version()}) :: t()
-  def new(%{condition: condition_attrs, method: method, name: name, version: version})
+  @spec new(%{
+          required(:condition) => map(),
+          required(:method) => method(),
+          required(:name) => name(),
+          optional(:version) => version()
+        }) ::
+          t()
+  def new(%{condition: condition_attrs, method: method, name: name} = attrs)
       when method in @methods and name in @subscription_type_names do
     %__MODULE__{
       condition: Condition.new(name, condition_attrs),
       method: method,
       name: name,
-      version: version
+      version: attrs[:version] || version_for_type(name)
     }
   end
+
+  defp version_for_type(name), do: get_in(@subscription_types, [name, :version])
 end

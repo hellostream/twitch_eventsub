@@ -58,6 +58,24 @@ your actions found here [https://dev.twitch.tv/docs/authentication/scopes](https
 ]
 ```
 
+All of the above subscriptions will work without passing conditions, as long as you
+provide the `broadcaster_user_id` and `user_id` fields to the config.
+
+Other subscriptions require different conditions, so if you add them, you need to add the conditions
+to the config, e.g:
+
+```elixir
+config :my_app,
+  event_sub: [
+    conditions: %{
+      "channel.chat.message" => %{
+        "broadcaster_user_id" => "123",
+        "user_id" => "123"
+      }
+    }
+  ]
+```
+
 #### Config options (Websocket-specific)
 
  * `:keepalive_timeout` - Optional. The keepalive timeout in seconds. Specifying an invalid,

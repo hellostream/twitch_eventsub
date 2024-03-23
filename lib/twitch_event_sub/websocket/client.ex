@@ -7,25 +7,10 @@ if Code.ensure_loaded?(WebSockex) do
 
     require Logger
 
-    # NOTE: `channel.chat.message` is still better in IRC, because we get more info.
-    # This is why we are not including it in the defaults.
-
-    @default_subs ~w[
-      channel.chat.notification
-      channel.ad_break.begin channel.cheer channel.follow channel.subscription.end
-      channel.channel_points_custom_reward_redemption.add
-      channel.channel_points_custom_reward_redemption.update
-      channel.charity_campaign.donate channel.charity_campaign.progress
-      channel.goal.begin channel.goal.progress channel.goal.end
-      channel.hype_train.begin channel.hype_train.progress channel.hype_train.end
-      channel.shoutout.create channel.shoutout.receive
-      stream.online stream.offline
-    ]
-
-    # NOTE: `extension.bits_transaction.create` requires `extension_client_id`
-    # in the conditions, so it should be added to the `:conditions` option.
-
     @opaque state :: %{
+              optional(:broadcaster_user_id) => %{},
+              optional(:user_id) => %{},
+              optional(:conditions) => %{},
               auth: TwitchAPI.Auth.t(),
               handler: module(),
               keepalive_timeout: pos_integer(),
@@ -122,11 +107,13 @@ if Code.ensure_loaded?(WebSockex) do
     defp handle_message(%{"message_type" => "session_welcome"}, payload, state) do
       Logger.info("[TwitchEventSub] connected")
       %{"session" => %{"id" => session_id}} = payload
-      auth = state.auth
 
-      for subscription <- state.subscriptions do
-        Subscriptions.create(:websocket, auth, session_id, subscription)
-      end
+      Subscriptions.create_many(
+        state.auth,
+        :websocket,
+        state.subscriptions,
+        Map.put(state, :session_id, session_id)
+      )
     end
 
     # ## Keepalive message

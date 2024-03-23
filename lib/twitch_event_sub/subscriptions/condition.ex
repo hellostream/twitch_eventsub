@@ -66,6 +66,7 @@ defmodule TwitchEventSub.Subscriptions.Condition do
 
     defmodule condition_module do
       @moduledoc false
+      @derive Jason.Encoder
       @enforce_keys type.condition.required
       defstruct type.condition.required ++ type.condition.optional
       def new(condition), do: struct(__MODULE__, condition)
