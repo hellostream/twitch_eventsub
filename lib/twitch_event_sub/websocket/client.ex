@@ -318,15 +318,20 @@ if Code.ensure_loaded?(WebSockex) do
       Process.send_after(
         self(),
         {:delayed_event, "channel.ad_break.end", event},
-        event.duration_seconds * 1000
+        String.to_integer(event["duration_seconds"]) * 1000
       )
     end
 
     defp add_delayed_event("channel.shoutout.create", event) do
-      cooldown_duration = DateTime.diff(event.cooldown_ends_at, DateTime.utc_now(), :millisecond)
+      cooldown_duration =
+        event["cooldown_ends_at"]
+        |> DateTime.from_iso8601()
+        |> DateTime.diff(DateTime.utc_now(), :millisecond)
 
       cooldown_target_duration =
-        DateTime.diff(event.target_cooldown_ends_at, DateTime.utc_now(), :millisecond)
+        event["target_cooldown_ends_at"]
+        |> DateTime.from_iso8601()
+        |> DateTime.diff(DateTime.utc_now(), :millisecond)
 
       Process.send_after(
         self(),
