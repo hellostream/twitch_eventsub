@@ -49,7 +49,7 @@ defmodule TwitchEventSub.Subscriptions do
       "transport" => transport(subscription.method, opts)
     }
 
-    TwitchAPI.post(auth, "/eventsub/subscriptions", json: params)
+    TwitchAPI.post(auth, "/eventsub/subscriptions", json: params, success: 202)
   end
 
   @doc """
