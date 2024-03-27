@@ -49,7 +49,11 @@ defmodule TwitchEventSub.Subscriptions do
       "transport" => transport(subscription.method, opts)
     }
 
-    TwitchAPI.post(auth, "/eventsub/subscriptions", json: params, success: 202)
+    with(
+      {:ok, _resp} <- TwitchAPI.post(auth, "/eventsub/subscriptions", json: params, success: 202)
+    ) do
+      Logger.debug("[TwitchEventSub.Subscriptions] subscribed to #{subscription.name}")
+    end
   end
 
   @doc """
