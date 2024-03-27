@@ -40,23 +40,24 @@ defmodule TwitchEventSub.Subscriptions do
           auth :: TwitchAPI.Auth.t(),
           subscription :: Subscription.t(),
           opts :: map()
-        ) :: TwitchAPI.response()
+        ) :: {:ok, Req.Response.t()} | {:error, term()}
   def create(%TwitchAPI.Auth{} = auth, %Subscription{} = subscription, opts) do
-    TwitchAPI.create_eventsub_subscription(
-      auth,
-      subscription.name,
-      subscription.version,
-      transport(subscription.method, opts),
-      subscription.condition
-    )
+    params = %{
+      "type" => subscription.name,
+      "version" => subscription.version,
+      "condition" => subscription.condition,
+      "transport" => transport(subscription.method, opts)
+    }
+
+    TwitchAPI.post(auth, "/eventsub/subscriptions", json: params)
   end
 
   @doc """
   List all eventsub subscriptions.
   """
-  @spec list(TwitchAPI.Auth.t(), map()) :: TwitchAPI.response()
+  @spec list(TwitchAPI.Auth.t(), params :: map()) :: {:ok, Req.Response.t()} | {:error, term()}
   def list(%TwitchAPI.Auth{} = auth, params \\ %{}) do
-    TwitchAPI.list_eventsub_subscriptions(auth, params)
+    TwitchAPI.get(auth, "/eventsub/subscriptions", json: params)
   end
 
   # ----------------------------------------------------------------------------

@@ -48,7 +48,7 @@ defmodule TwitchEventSub do
   end
 
   @doc false
-  def default_handle_event(type, event) do
-    Logger.debug("[TwitchEventSub] Event #{type}: #{inspect(event)}")
+  def default_handle_event(type, _event) do
+    Logger.debug("[TwitchEventSub] unhandled #{type} event")
   end
 end
