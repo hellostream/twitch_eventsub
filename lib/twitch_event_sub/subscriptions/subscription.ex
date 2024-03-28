@@ -3,6 +3,8 @@ defmodule TwitchEventSub.Subscriptions.Subscription do
 
   alias TwitchEventSub.Subscriptions.Condition
 
+  require Logger
+
   @type condition :: struct()
   @type method :: :conduit | :webhook | :websocket
   @type name :: String.t()

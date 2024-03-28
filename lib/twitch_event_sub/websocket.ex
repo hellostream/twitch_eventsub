@@ -73,13 +73,12 @@ defmodule TwitchEventSub.WebSocket do
 
   # The options accepted (and required) by the websocket client.
   @required_opts ~w[user_id client_id access_token handler channel_ids]a
-  @allowed_opts @required_opts ++ ~w[broadcaster_user_id subscriptions]a
+  @allowed_opts @required_opts ++ ~w[subscriptions]a
 
   # NOTE: `channel.chat.message` is still better in IRC, because we get more info.
-  # This is why we are not including it in the defaults.
 
   @default_subs ~w[
-    channel.chat.notification
+    channel.chat.message channel.chat.notification
     channel.ad_break.begin channel.cheer channel.follow channel.subscription.end
     channel.channel_points_custom_reward_redemption.add
     channel.channel_points_custom_reward_redemption.update
@@ -89,9 +88,6 @@ defmodule TwitchEventSub.WebSocket do
     channel.shoutout.create channel.shoutout.receive
     stream.online stream.offline
   ]
-
-  # NOTE: `extension.bits_transaction.create` requires `extension_client_id`
-  # in the conditions, so it should be added to the `:conditions` option.
 
   @doc false
   @spec start_link([option()]) :: Supervisor.on_start()

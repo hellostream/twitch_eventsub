@@ -34,9 +34,28 @@ analytics:read:extensions analytics:read:games bits:read channel:read:ads channe
 If you want to do moderation things with this token, then you can add the required scopes for
 your actions found here [https://dev.twitch.tv/docs/authentication/scopes](https://dev.twitch.tv/docs/authentication/scopes/).
 
+#### Config file example
+
+```elixir
+# config/runtime.exs
+
+# Add to the existing bot config.
+config :my_app,
+  event_sub: [
+    user_id: "123456",
+    channel_ids: ["123456"],
+    handler: MyApp.TwitchEvents,
+    client_id: System.fetch_env!("TWITCH_CLIENT_ID"),
+    access_token: System.fetch_env!("TWITCH_ACCESS_TOKEN"),
+    # Webhook secret is only if you are using webhooks.
+    webhook_secret: System.fetch_env!("TWITCH_WEBHOOK_SECRET")
+  ]
+```
+
 #### Config options (EventSub)
 
- * `:user_id` - The twitch user ID of the broadcaster.
+ * `:user_id` - The twitch user ID of the user that your token is for.
+ * `:channel_ids` - The twitch user ID of the broadcaster channels that you are subscribing to.
  * `:handler` - A module that `use`s `TwitchEventSub` and implements the `TwitchEventSub.Handler` behaviour.
  * `:client_id` - The client ID of the application you used for the token.
  * `:access_token` - The OAuth token you generated with the correct scopes for your subscriptions.
@@ -61,23 +80,36 @@ your actions found here [https://dev.twitch.tv/docs/authentication/scopes](https
 All of the above subscriptions will work without passing conditions, as long as you
 provide the `broadcaster_user_id` and `user_id` fields to the config.
 
-Other subscriptions require different conditions, so if you add them, you need to add the conditions
-to the config, e.g:
+Other subscriptions require different conditions, so if you add them, you need to add the subscription
+as a map, and include the condition. Example:
 
 ```elixir
 config :my_app,
   event_sub: [
-    conditions: %{
-      "channel.chat.message" => %{
-        "broadcaster_user_id" => "123",
-        "user_id" => "123"
+    subscriptions: [
+      "channel.chat.message",
+      "channel.chat.notification",
+      "channel.ad_break.begin",
+      "channel.cheer",
+      # etc...
+      # Add a map of attrs for subscriptions.
+      # Required fields are `:name`, `:method`, and `:condition`.
+      # See the Twitch docs for the required and optional conditions.
+      %{
+        name: "channel.channel_points_custom_reward_redemption.add",
+        method: :websocket,
+        condition: %{
+          broadcaster_user_id: "1337",
+          reward_id: "92af127c-7326-4483-a52b-b0da0be61c01"
+        }
       }
-    }
+    ]
   ]
 ```
 
 #### Config options (Websocket-specific)
 
+ * `:url` - Optional. The URL for the Twitch EventSub websocket server. Defaults to Twitch.
  * `:keepalive_timeout` - Optional. The keepalive timeout in seconds. Specifying an invalid,
    but numeric value will return the nearest acceptable value. Defaults to `10`.
  * `:start?` - Optional. A boolean value of whether or not to start the eventsub socket.
@@ -87,22 +119,6 @@ config :my_app,
 
  * `:webhook_secret` - The secret to be used when creating and receiving subscriptions.
 
-#### Config file example
-
-```elixir
-# config/runtime.exs
-
-# Add to the existing bot config.
-config :my_app,
-  event_sub: [
-    user_id: "123456",
-    channels: ["mychannel"],
-    handler: MyApp.TwitchEvents,
-    webhook_secret: System.fetch_env!("TWITCH_WEBHOOK_SECRET"),
-    client_id: System.fetch_env!("TWITCH_CLIENT_ID"),
-    access_token: System.fetch_env!("TWITCH_ACCESS_TOKEN")
-  ]
-```
 
 ### Handler module
 

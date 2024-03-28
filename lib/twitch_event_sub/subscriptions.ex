@@ -13,24 +13,36 @@ defmodule TwitchEventSub.Subscriptions do
   @spec create_many(
           auth :: TwitchAPI.Auth.t(),
           method :: :conduit | :webhook | :websocket,
+          channel_ids :: [String.t()],
           subscriptions :: [String.t()],
           opts :: map()
         ) :: :ok
-  def create_many(%TwitchAPI.Auth{} = auth, method, subscriptions, opts)
-      when is_list(subscriptions) do
-    broadcaster_id = Map.fetch!(opts, :broadcaster_user_id)
+  def create_many(%TwitchAPI.Auth{} = auth, method, channel_ids, subscriptions, opts)
+      when is_list(channel_ids) and is_list(subscriptions) do
     user_id = Map.fetch!(opts, :user_id)
 
-    Enum.each(subscriptions, fn name ->
-      condition =
-        with nil <- get_in(opts, [:conditions, name]) do
-          condition(name, broadcaster_id, user_id)
+    for broadcaster_user_id <- channel_ids, sub_or_name <- subscriptions do
+      subscription =
+        case sub_or_name do
+          # When library user supplies subscription names only, then we build out
+          # the attributes from that and the options provided.
+          name when is_binary(name) ->
+            condition = condition(name, broadcaster_user_id, user_id)
+            Subscription.new(%{method: method, name: name, condition: condition})
+
+          # When library user supplies subscription attributes as a map.
+          %{condition: %{}} = attrs ->
+            Subscription.new(attrs)
+
+          # When they supply a map but without a condition.
+          %{} = _attrs ->
+            raise ArgumentError, message: "subscription attributes require condition"
         end
 
-      subscription = Subscription.new(%{method: method, name: name, condition: condition})
-
       create(auth, subscription, opts)
-    end)
+    end
+
+    :ok
   end
 
   @doc """
@@ -93,6 +105,9 @@ defmodule TwitchEventSub.Subscriptions do
   # ----------------------------------------------------------------------------
   # Subscription conditions...
   # ----------------------------------------------------------------------------
+  # If a library user omits the condition (because it is a common one), or
+  # provides only the subscription names, then we will attempt to build the
+  # condition for them.
 
   defp condition("channel.ad_break." <> _, broadcaster_user_id, _user_id) do
     %{broadcaster_user_id: broadcaster_user_id}

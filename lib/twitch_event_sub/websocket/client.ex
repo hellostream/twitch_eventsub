@@ -8,10 +8,10 @@ if Code.ensure_loaded?(WebSockex) do
     require Logger
 
     @opaque state :: %{
-              optional(:broadcaster_user_id) => %{},
               optional(:user_id) => %{},
               optional(:conditions) => %{},
               auth: TwitchAPI.Auth.t(),
+              channel_ids: [String.t()],
               handler: module(),
               keepalive_timeout: pos_integer(),
               subscriptions: [String.t()],
@@ -111,6 +111,7 @@ if Code.ensure_loaded?(WebSockex) do
       Subscriptions.create_many(
         state.auth,
         :websocket,
+        state.channel_ids,
         state.subscriptions,
         Map.put(state, :session_id, session_id)
       )
