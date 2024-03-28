@@ -93,11 +93,10 @@ config :my_app,
       "channel.cheer",
       # etc...
       # Add a map of attrs for subscriptions.
-      # Required fields are `:name`, `:method`, and `:condition`.
+      # Required fields are `:name`, and `:condition`.
       # See the Twitch docs for the required and optional conditions.
       %{
         name: "channel.channel_points_custom_reward_redemption.add",
-        method: :websocket,
         condition: %{
           broadcaster_user_id: "1337",
           reward_id: "92af127c-7326-4483-a52b-b0da0be61c01"

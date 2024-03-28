@@ -32,7 +32,7 @@ defmodule TwitchEventSub.Subscriptions do
 
           # When library user supplies subscription attributes as a map.
           %{condition: %{}} = attrs ->
-            Subscription.new(attrs)
+            Map.put(attrs, :method, method) |> Subscription.new()
 
           # When they supply a map but without a condition.
           %{} = _attrs ->

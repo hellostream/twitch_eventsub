@@ -102,7 +102,9 @@ defmodule TwitchEventSub.WebSocket do
     # auth struct for the client.
     {client_id, opts} = Keyword.pop!(opts, :client_id)
     {access_token, opts} = Keyword.pop!(opts, :access_token)
-    auth = TwitchAPI.Auth.new(client_id, access_token)
+
+    auth =
+      TwitchAPI.Auth.new(client_id) |> TwitchAPI.Auth.put_access_token(access_token)
 
     keepalive = Keyword.get(opts, :keepalive_timeout, @default_keepalive_timeout)
     query = URI.encode_query(keepalive_timeout_seconds: keepalive)
