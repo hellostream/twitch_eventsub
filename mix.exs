@@ -21,7 +21,7 @@ defmodule TwitchEventSub.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:hello_twitch_api, "~> 0.4.0"},
+      {:hello_twitch_api, "~> 0.4.8"},
       {:jason, "~> 1.4"},
       {:req, "~> 0.4"},
       {:plug, "~> 1.15", optional: true},
