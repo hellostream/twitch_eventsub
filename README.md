@@ -10,7 +10,7 @@ dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:twitch_eventsub, "~> 0.1.0"}
+    {:hello_twitch_eventsub, "~> 0.1.0"}
   ]
 end
 ```
