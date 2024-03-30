@@ -17,15 +17,37 @@ end
 
 ### Setup
 
-* You need to create an app on the [Twitch Developer Console](https://dev.twitch.tv/console/apps/create)
-   to get the `client_id`. Also, add the redirect URL from the instructions in the token generator
-   linked below if you use that.
- * To get an OAuth token for EventSub, it's easiest of you are logged in as the broadcaster of the
-   channel you want to use the bot for and then you can use the [Twitch OAuth Token Generator](https://twitchapps.com/tokengen/)
-   with the `client_id` of the app you created.
+ * You need to create an app on the [Twitch Developer Console](https://dev.twitch.tv/console/apps/create)
+   to get the `client_id` and `client_secret`.
 
-For scopes, I just use all the `read` scopes except for `whisper` and `stream_key`. If you want to
-do the same, just paste the below into the `scopes` field on the token generator page:
+You can get an OAuth token from the command line, or using `twitchapps.com`.
+
+#### CLI version (recommended)
+
+ * Add a `redirect_uri` to your app on the developer console that looks like:
+   `http://localhost:42069/oauth/callback`
+ * [Optional] set `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, and `TWITCH_AUTH_SCOPE`
+   environment variables. For the auth scope you can use the example in the code
+   block further down this page.
+ * Run `mix help auth.token` to see the available options.
+ * You can specify the auth-specific options or exclude them and the app will use the
+   optional environment variables noted above.
+ * If you output `--json` then it will be easy to revoke and refresh your token during
+   development.
+
+**IMPORTANT NOTE:** add `.twitch.json` to your `.gitignore` file.
+
+#### Twitchapps.com version
+
+ * Add the redirect URL to your app: `https://twitchapps.com/tokengen/`.
+ * Go to the [Twitch OAuth Token Generator](https://twitchapps.com/tokengen/) and
+   paste in your `client_id` and the scopes you want (see the example below you can use).
+
+##### Example Scopes
+
+For scopes, I just use all the `read` scopes except for `whisper` and `stream_key`.
+If you want to do the same, just paste the below into the `scopes` field on the
+token generator page:
 
 ```
 analytics:read:extensions analytics:read:games bits:read channel:read:ads channel:read:charity channel:read:goals channel:read:guest_star channel:read:hype_train channel:read:polls channel:read:predictions channel:read:redemptions channel:read:subscriptions channel:read:vips moderation:read moderator:read:automod_settings moderator:read:blocked_terms moderator:read:chat_settings moderator:read:chatters moderator:read:followers moderator:read:guest_star moderator:read:shield_mode moderator:read:shoutouts user:read:blocked_users user:read:broadcast user:read:email user:read:follows user:read:subscriptions channel:bot chat:read user:bot user:read:chat
@@ -34,19 +56,29 @@ analytics:read:extensions analytics:read:games bits:read channel:read:ads channe
 If you want to do moderation things with this token, then you can add the required scopes for
 your actions found here [https://dev.twitch.tv/docs/authentication/scopes](https://dev.twitch.tv/docs/authentication/scopes/).
 
-#### Config file example
+#### Config files example (if using `.twitch.json` for local dev)
 
 ```elixir
 # config/runtime.exs
 
-# Add to the existing bot config.
+twitch_access_token =
+  case config_env() do
+    :prod ->
+      System.fetch_env!("TWITCH_ACCESS_TOKEN")
+
+    _dev_or_test ->
+      File.read!(".twitch.json")
+      |> Jason.decode!()
+      |> Map.fetch!("access_token")
+  end
+
 config :my_app,
   event_sub: [
     user_id: "123456",
     channel_ids: ["123456"],
     handler: MyApp.TwitchEvents,
     client_id: System.fetch_env!("TWITCH_CLIENT_ID"),
-    access_token: System.fetch_env!("TWITCH_ACCESS_TOKEN"),
+    access_token: twitch_access_token,
     # Webhook secret is only if you are using webhooks.
     webhook_secret: System.fetch_env!("TWITCH_WEBHOOK_SECRET")
   ]
