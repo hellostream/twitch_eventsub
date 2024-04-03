@@ -6,7 +6,7 @@ defmodule TwitchEventSub.MixProject do
   def project do
     [
       app: :hello_twitch_eventsub,
-      version: "0.1.0",
+      version: "0.1.1",
       elixir: "~> 1.16",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -27,7 +27,7 @@ defmodule TwitchEventSub.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:hello_twitch_api, "~> 0.4.13"},
+      {:hello_twitch_api, "~> 0.4.14"},
       {:jason, "~> 1.4"},
       {:req, "~> 0.4"},
       {:plug, "~> 1.15", optional: true},
