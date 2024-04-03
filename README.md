@@ -15,6 +15,14 @@ def deps do
 end
 ```
 
+If you are using the websocket eventsub, add:
+
+      {:websockex, "~> 0.4"},
+
+If you are using webhooks with Plug (and you are not already using Phoenix or Plug, add:
+
+      {:plug, "~> 1.15"},
+
 ### Setup
 
  * You need to create an app on the [Twitch Developer Console](https://dev.twitch.tv/console/apps/create)
