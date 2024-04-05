@@ -185,14 +185,16 @@ defmodule TwitchEventSub.WebSocket.Client do
   defp handle_message(%{"message_type" => "notification"} = meta, %{"event" => event}, state) do
     %{"subscription_type" => type} = meta
     Logger.debug("[TwitchEventSub] notification #{type}: #{inspect(event, pretty: true)}")
+
+    # Add a custom event for when certain timed events end, since Twitch doesn't
+    # provide them for us.
     add_delayed_event(type, event)
 
-    try do
-      state.handler.handle_event(type, event)
-    rescue
-      e ->
-        Logger.error("[TwitchEventSub] handle_event error:\n#{inspect(e)}")
-    end
+    # Call the library implementor's handle_event/2 function.
+    state.handler.handle_event(type, event)
+  rescue
+    e ->
+      Logger.error("[TwitchEventSub] handle_event error:\n#{inspect(e)}")
   end
 
   # ## Reconnect message
