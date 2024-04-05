@@ -186,7 +186,13 @@ defmodule TwitchEventSub.WebSocket.Client do
     %{"subscription_type" => type} = meta
     Logger.debug("[TwitchEventSub] notification #{type}: #{inspect(event, pretty: true)}")
     add_delayed_event(type, event)
-    state.handler.handle_event(type, event)
+
+    try do
+      state.handler.handle_event(type, event)
+    rescue
+      e ->
+        Logger.error("[TwitchEventSub] handle_event error:\n#{inspect(e)}")
+    end
   end
 
   # ## Reconnect message
@@ -323,15 +329,13 @@ defmodule TwitchEventSub.WebSocket.Client do
   end
 
   defp add_delayed_event("channel.shoutout.create", event) do
-    cooldown_duration =
-      event["cooldown_ends_at"]
-      |> DateTime.from_iso8601()
-      |> DateTime.diff(DateTime.utc_now(), :millisecond)
+    {:ok, cooldown_ends_at, _} = DateTime.from_iso8601(event["cooldown_ends_at"])
+    cooldown_duration = DateTime.diff(cooldown_ends_at, DateTime.utc_now(), :millisecond)
+
+    {:ok, target_cooldown_ends_at, _} = DateTime.from_iso8601(event["target_cooldown_ends_at"])
 
     cooldown_target_duration =
-      event["target_cooldown_ends_at"]
-      |> DateTime.from_iso8601()
-      |> DateTime.diff(DateTime.utc_now(), :millisecond)
+      DateTime.diff(target_cooldown_ends_at, DateTime.utc_now(), :millisecond)
 
     Process.send_after(
       self(),
