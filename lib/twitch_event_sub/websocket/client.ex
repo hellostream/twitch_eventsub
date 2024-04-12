@@ -194,7 +194,9 @@ defmodule TwitchEventSub.WebSocket.Client do
     state.handler.handle_event(type, event)
   rescue
     e ->
-      Logger.error("[TwitchEventSub] handle_event error:\n#{inspect(e)}")
+      Logger.error(
+        "[TwitchEventSub] handle_event error: #{inspect(e)}\n#{inspect(__STACKTRACE__, pretty: true)}"
+      )
   end
 
   # ## Reconnect message
