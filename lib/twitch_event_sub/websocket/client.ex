@@ -57,8 +57,9 @@ defmodule TwitchEventSub.WebSocket.Client do
   end
 
   @impl WebSockex
-  def handle_info({:delayed_event, event}, state) do
-    state.handler.handle_event(event)
+  def handle_info({:delayed_event, type, event}, state) do
+    Logger.debug("[TwitchEventSub] #{type} (custom delayed)")
+    dispatch_event(state.handler, type, event)
     {:ok, state}
   end
 
@@ -138,6 +139,7 @@ defmodule TwitchEventSub.WebSocket.Client do
   #     }
   #
   defp handle_message(%{"message_type" => "session_keepalive"}, _payload, _state) do
+    # TODO: Something with this message at some point.
     Logger.info("[TwitchEventSub] keepalive")
   end
 
@@ -184,19 +186,9 @@ defmodule TwitchEventSub.WebSocket.Client do
   #
   defp handle_message(%{"message_type" => "notification"} = meta, %{"event" => event}, state) do
     %{"subscription_type" => type} = meta
-    Logger.debug("[TwitchEventSub] notification #{type}: #{inspect(event, pretty: true)}")
-
-    # Add a custom event for when certain timed events end, since Twitch doesn't
-    # provide them for us.
+    Logger.debug("[TwitchEventSub] #{type}")
     add_delayed_event(type, event)
-
-    # Call the library implementor's handle_event/2 function.
-    state.handler.handle_event(type, event)
-  rescue
-    e ->
-      Logger.error(
-        "[TwitchEventSub] handle_event error: #{inspect(e)}\n#{inspect(__STACKTRACE__, pretty: true)}"
-      )
+    dispatch_event(state.handler, type, event)
   end
 
   # ## Reconnect message
@@ -238,6 +230,7 @@ defmodule TwitchEventSub.WebSocket.Client do
   #     }
   #
   defp handle_message(%{"message_type" => "session_reconnect"}, _payload, _state) do
+    # TODO: Something with this message at some point.
     Logger.debug("[TwitchEventSub] reconnect message")
   end
 
@@ -288,6 +281,7 @@ defmodule TwitchEventSub.WebSocket.Client do
   #     }
   #
   defp handle_message(%{"message_type" => "revocation"}, payload, _state) do
+    # TODO: Something with this message at some point.
     %{"subscription" => %{}} = payload
     Logger.error("[TwitchEventSub] sub revoked: #{inspect(payload)}")
   end
@@ -313,6 +307,29 @@ defmodule TwitchEventSub.WebSocket.Client do
   end
 
   # --------------------------------------------------------------------------
+  # Dispatch the event.
+  # --------------------------------------------------------------------------
+  # Asynchronously call the handler's `handle_event/2` function (so we don't
+  # block the websocket client), and rescue any errors to log the error and
+  # the stacktrace. Otherwise `WebSockex` swallows it and silently and restarts.
+  defp dispatch_event(handler, type, event) do
+    Task.start(fn ->
+      try do
+        handler.handle_event(type, event)
+      rescue
+        exception ->
+          Logger.error([
+            "[TwitchEventSub] error in handle_event/2: ",
+            "\n\n",
+            "[#{inspect(exception.__struct__)}] ",
+            Exception.message(exception),
+            Exception.format_stacktrace(__STACKTRACE__)
+          ])
+      end
+    end)
+  end
+
+  # --------------------------------------------------------------------------
   # Custom Delayed Events
   # --------------------------------------------------------------------------
   # Delayed events are events we create based on other events that have some
@@ -325,27 +342,45 @@ defmodule TwitchEventSub.WebSocket.Client do
   # This is exactly what we do.
 
   defp add_delayed_event("channel.ad_break.begin", event) do
+    # Twitch says in their docs that this is an integer, but then in the
+    # example code they show it as an integer string. I have always seen
+    # it as an integer as well, but this is how little I trust Twitch at
+    # this point...
+    duration_seconds =
+      case event["duration_seconds"] do
+        seconds when is_integer(seconds) -> seconds
+        seconds when is_binary(seconds) -> String.to_integer(seconds)
+      end
+
     Process.send_after(
       self(),
       {:delayed_event, "channel.ad_break.end", event},
-      String.to_integer(event["duration_seconds"]) * 1000
+      duration_seconds * 1000
     )
   end
 
   defp add_delayed_event("channel.shoutout.create", event) do
-    {:ok, cooldown_ends_at, _} = DateTime.from_iso8601(event["cooldown_ends_at"])
-    cooldown_duration = DateTime.diff(cooldown_ends_at, DateTime.utc_now(), :millisecond)
+    # Over-all cooldown (shoutout overall cooldown).
+    # This is the time between when you can do another shoutout to another
+    # streamer.
+    {:ok, cooldown_ends_at, 0} = DateTime.from_iso8601(event["cooldown_ends_at"])
 
-    {:ok, target_cooldown_ends_at, _} = DateTime.from_iso8601(event["target_cooldown_ends_at"])
-
-    cooldown_target_duration =
-      DateTime.diff(target_cooldown_ends_at, DateTime.utc_now(), :millisecond)
+    cooldown_duration =
+      DateTime.diff(cooldown_ends_at, DateTime.utc_now(), :millisecond)
 
     Process.send_after(
       self(),
       {:delayed_event, "channel.shoutout.cooldown.end", event},
       cooldown_duration
     )
+
+    # Target cooldown (shoutout to the same target cooldown).
+    # THis is the time between when you can do a shoutout to the same
+    # streamer again.
+    {:ok, target_cooldown_ends_at, 0} = DateTime.from_iso8601(event["target_cooldown_ends_at"])
+
+    cooldown_target_duration =
+      DateTime.diff(target_cooldown_ends_at, DateTime.utc_now(), :millisecond)
 
     Process.send_after(
       self(),

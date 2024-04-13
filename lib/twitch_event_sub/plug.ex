@@ -90,7 +90,7 @@ if Code.ensure_loaded?(Plug) do
       challenge_length = String.length(challenge)
 
       conn
-      |> Plug.Conn.put_resp_header("content-length", challenge_length)
+      |> Plug.Conn.put_resp_header("content-length", to_string(challenge_length))
       |> Plug.Conn.put_resp_header("content-type", "text/plain")
       |> Plug.Conn.send_resp(200, challenge)
       |> Plug.Conn.halt()
