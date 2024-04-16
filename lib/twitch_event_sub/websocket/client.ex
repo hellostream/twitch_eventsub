@@ -9,7 +9,7 @@ defmodule TwitchEventSub.WebSocket.Client do
   @opaque state :: %{
             optional(:user_id) => %{},
             optional(:conditions) => %{},
-            auth: TwitchAPI.Auth.t(),
+            auth_store: TwitchAPI.AuthStore.name() | pid(),
             channel_ids: [String.t()],
             handler: module(),
             keepalive_timeout: pos_integer(),
@@ -40,7 +40,7 @@ defmodule TwitchEventSub.WebSocket.Client do
         {:ok, state}
 
       _ ->
-        Logger.warning("[TwitchEventSub] Unhandled message: #{msg}")
+        Logger.warning("[TwitchEventSub] unhandled message, please file an issue: #{msg}")
         {:ok, state}
     end
   end
@@ -65,7 +65,7 @@ defmodule TwitchEventSub.WebSocket.Client do
 
   @impl WebSockex
   def terminate(close_reason, _state) do
-    Logger.error("[TwitchEventSub] terminating #{inspect(close_reason)}")
+    Logger.info("[TwitchEventSub] terminating: #{inspect(close_reason)}")
   end
 
   # ----------------------------------------------------------------------------
@@ -109,7 +109,7 @@ defmodule TwitchEventSub.WebSocket.Client do
     %{"session" => %{"id" => session_id}} = payload
 
     Subscriptions.create_many(
-      state.auth,
+      state.auth_store,
       :websocket,
       state.channel_ids,
       state.subscriptions,
@@ -139,8 +139,8 @@ defmodule TwitchEventSub.WebSocket.Client do
   #     }
   #
   defp handle_message(%{"message_type" => "session_keepalive"}, _payload, _state) do
-    # TODO: Something with this message at some point.
-    Logger.info("[TwitchEventSub] keepalive")
+    # TODO: should I bother tracking this keepalive timeout for reconnecting?
+    Logger.debug("[TwitchEventSub] keepalive")
   end
 
   # ## Notification message
@@ -280,10 +280,19 @@ defmodule TwitchEventSub.WebSocket.Client do
   #       }
   #     }
   #
-  defp handle_message(%{"message_type" => "revocation"}, payload, _state) do
-    # TODO: Something with this message at some point.
-    %{"subscription" => %{}} = payload
-    Logger.error("[TwitchEventSub] sub revoked: #{inspect(payload)}")
+  defp handle_message(
+         %{"message_type" => "revocation"},
+         %{"subscription" => subscription},
+         _state
+       ) do
+    case subscription do
+      %{"status" => "authorization_revoked"} ->
+        # TODO: refresh token and resub.
+        :ok
+
+      _sbuscription ->
+        Logger.error("[TwitchEventSub] sub revoked: #{inspect(subscription)}")
+    end
   end
 
   # ## Close message

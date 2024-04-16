@@ -72,8 +72,8 @@ defmodule TwitchEventSub.WebSocket do
   @default_keepalive_timeout 30
 
   # The options accepted (and required) by the websocket client.
-  @required_opts ~w[user_id client_id access_token handler channel_ids]a
-  @allowed_opts @required_opts ++ ~w[subscriptions]a
+  @required_opts ~w[user_id client_id client_secret access_token handler channel_ids]a
+  @allowed_opts @required_opts ++ ~w[subscriptions auth_store_name]a
 
   # NOTE: `channel.chat.message` is still better in IRC, because we get more info.
 
@@ -98,13 +98,12 @@ defmodule TwitchEventSub.WebSocket do
           "missing required options (#{inspect(@required_opts)}), got: #{inspect(Keyword.keys(opts))}"
     end
 
-    # Pull the client ID and access token from the opts and put them into an
-    # auth struct for the client.
+    # Pull the auth items from the opts and put them into an auth struct for
+    # the client.
     {client_id, opts} = Keyword.pop!(opts, :client_id)
-    {access_token, opts} = Keyword.pop!(opts, :access_token)
-
-    auth =
-      TwitchAPI.Auth.new(client_id) |> TwitchAPI.Auth.put_access_token(access_token)
+    {client_secret, opts} = Keyword.pop!(opts, :client_secret)
+    {access_token, opts} = Keyword.pop(opts, :access_token)
+    auth = TwitchAPI.Auth.new(client_id, client_secret, access_token)
 
     keepalive = Keyword.get(opts, :keepalive_timeout, @default_keepalive_timeout)
     query = URI.encode_query(keepalive_timeout_seconds: keepalive)
@@ -129,8 +128,13 @@ defmodule TwitchEventSub.WebSocket do
   @doc false
   @impl true
   def init(opts) do
+    # We need a way to reference the auth store in the websocket client.
+    auth_store = Keyword.get(opts, :auth_store_name) || :erlang.phash2(self())
+    {auth, opts} = Keyword.pop!(opts, :auth)
+
     children = [
-      {TwitchEventSub.WebSocket.Client, opts}
+      {TwitchAPI.AuthStore, auth: auth, callback_module: TwitchAPI.AuthFile, name: auth_store},
+      {TwitchEventSub.WebSocket.Client, [{:auth_store, auth_store} | opts]}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

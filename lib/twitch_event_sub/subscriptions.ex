@@ -7,17 +7,19 @@ defmodule TwitchEventSub.Subscriptions do
 
   require Logger
 
+  @type auth_store :: TwitchAPI.AuthStore.name() | pid()
+
   @doc """
   Create many Twitch event sub subscriptions.
   """
   @spec create_many(
-          auth :: TwitchAPI.Auth.t(),
+          auth_store :: auth_store(),
           method :: :conduit | :webhook | :websocket,
           channel_ids :: [String.t()],
           subscriptions :: [String.t()],
           opts :: map()
         ) :: :ok
-  def create_many(%TwitchAPI.Auth{} = auth, method, channel_ids, subscriptions, opts)
+  def create_many(auth_store, method, channel_ids, subscriptions, opts)
       when is_list(channel_ids) and is_list(subscriptions) do
     user_id = Map.fetch!(opts, :user_id)
 
@@ -39,7 +41,7 @@ defmodule TwitchEventSub.Subscriptions do
             raise ArgumentError, message: "subscription attributes require condition"
         end
 
-      create(auth, subscription, opts)
+      create(auth_store, subscription, opts)
     end
 
     :ok
@@ -49,11 +51,11 @@ defmodule TwitchEventSub.Subscriptions do
   Create an eventsub subscription.
   """
   @spec create(
-          auth :: TwitchAPI.Auth.t(),
+          auth_store :: auth_store(),
           subscription :: Subscription.t(),
           opts :: map()
         ) :: {:ok, Req.Response.t()} | {:error, term()}
-  def create(%TwitchAPI.Auth{} = auth, %Subscription{} = subscription, opts) do
+  def create(auth_store, %Subscription{} = subscription, opts) do
     params = %{
       "type" => subscription.name,
       "version" => subscription.version,
@@ -62,7 +64,8 @@ defmodule TwitchEventSub.Subscriptions do
     }
 
     with(
-      {:ok, _resp} <- TwitchAPI.post(auth, "/eventsub/subscriptions", json: params, success: 202)
+      {:ok, _resp} <-
+        TwitchAPI.post(auth_store, "/eventsub/subscriptions", json: params, success: 202)
     ) do
       Logger.debug("[TwitchEventSub.Subscriptions] subscribed to #{subscription.name}")
     end
@@ -71,9 +74,10 @@ defmodule TwitchEventSub.Subscriptions do
   @doc """
   List all eventsub subscriptions.
   """
-  @spec list(TwitchAPI.Auth.t(), params :: map()) :: {:ok, Req.Response.t()} | {:error, term()}
-  def list(%TwitchAPI.Auth{} = auth, params \\ %{}) do
-    TwitchAPI.get(auth, "/eventsub/subscriptions", json: params)
+  @spec list(TwitchAPI.AuthStore.name() | pid(), params :: map()) ::
+          {:ok, Req.Response.t()} | {:error, term()}
+  def list(auth_store, params \\ %{}) do
+    TwitchAPI.get(auth_store, "/eventsub/subscriptions", json: params)
   end
 
   # ----------------------------------------------------------------------------
