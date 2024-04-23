@@ -6,19 +6,9 @@ defmodule TwitchEventSub.WebSocket do
   use Supervisor
 
   @typedoc """
-  Twitch app access token with required scopes for the provided `subscriptions`
-  """
-  @type access_token :: String.t()
-
-  @typedoc """
   The IDs of the channels we're subscribing to or something.
   """
   @type channel_ids :: [String.t()]
-
-  @typedoc """
-  Twitch app client id.
-  """
-  @type client_id :: String.t()
 
   @typedoc """
   The module that implements `TwitchEventSub`.
@@ -38,10 +28,10 @@ defmodule TwitchEventSub.WebSocket do
   @type start? :: boolean() | nil
 
   @typedoc """
-  The subscriptions for EventSub. Optional. Defaults to a bunch.
+  A subscription for EventSub. Optional. Defaults to a bunch.
   Check `TwitchEventSub.Websocket.Client` for the defaults.
   """
-  @type subscriptions :: [%{condition: map()}]
+  @type subscription :: String.t() | %{condition: map(), name: String.t()}
 
   @typedoc """
   A websocket URL to connect to. Optional.
@@ -55,16 +45,16 @@ defmodule TwitchEventSub.WebSocket do
   @type user_id :: String.t()
 
   @typedoc """
-  The options accepted (or required) by the Websocket client.
+  The options accepted (or required) by the `TwitchEventSub.Supervisor`.
   """
   @type option ::
-          {:access_token, access_token()}
-          | {:client_id, client_id()}
+          {:auth_store_callback_module, module()}
+          | {:auth_store_name, TwitchAPI.AuthStore.name()}
           | {:channel_ids, channel_ids()}
           | {:handler, handler()}
           | {:keepalive_timeout, keepalive_timeout()}
           | {:start?, start?()}
-          | {:subscriptions, subscriptions()}
+          | {:subscriptions, [subscription()]}
           | {:url, url()}
           | {:user_id, user_id()}
 
@@ -72,8 +62,8 @@ defmodule TwitchEventSub.WebSocket do
   @default_keepalive_timeout 30
 
   # The options accepted (and required) by the websocket client.
-  @required_opts ~w[user_id client_id client_secret access_token handler channel_ids]a
-  @allowed_opts @required_opts ++ ~w[subscriptions auth_store_name]a
+  @required_opts ~w[channel_ids handler user_id]a
+  @allowed_opts @required_opts ++ ~w[auth_store_callback_module auth_store_name subscriptions]a
 
   # NOTE: `channel.chat.message` is still better in IRC, because we get more info.
 
@@ -98,13 +88,6 @@ defmodule TwitchEventSub.WebSocket do
           "missing required options (#{inspect(@required_opts)}), got: #{inspect(Keyword.keys(opts))}"
     end
 
-    # Pull the auth items from the opts and put them into an auth struct for
-    # the client.
-    {client_id, opts} = Keyword.pop!(opts, :client_id)
-    {client_secret, opts} = Keyword.pop!(opts, :client_secret)
-    {access_token, opts} = Keyword.pop(opts, :access_token)
-    auth = TwitchAPI.Auth.new(client_id, client_secret, access_token)
-
     keepalive = Keyword.get(opts, :keepalive_timeout, @default_keepalive_timeout)
     query = URI.encode_query(keepalive_timeout_seconds: keepalive)
 
@@ -120,7 +103,7 @@ defmodule TwitchEventSub.WebSocket do
     opts =
       opts
       |> Keyword.take(@allowed_opts)
-      |> Keyword.merge(url: url, auth: auth, subscriptions: subscriptions)
+      |> Keyword.merge(url: url, subscriptions: subscriptions)
 
     Supervisor.start_link(__MODULE__, opts)
   end
@@ -129,12 +112,12 @@ defmodule TwitchEventSub.WebSocket do
   @impl true
   def init(opts) do
     # We need a way to reference the auth store in the websocket client.
-    auth_store = Keyword.get(opts, :auth_store_name) || :erlang.phash2(self())
-    {auth, opts} = Keyword.pop!(opts, :auth)
+    auth_store_name = Keyword.get(opts, :auth_store_name) || :erlang.phash2(self())
+    auth_store_callbacks = Keyword.get(opts, :auth_store_callback_module, TwitchAPI.AuthFile)
 
     children = [
-      {TwitchAPI.AuthStore, auth: auth, callback_module: TwitchAPI.AuthFile, name: auth_store},
-      {TwitchEventSub.WebSocket.Client, [{:auth_store, auth_store} | opts]}
+      {TwitchAPI.AuthStore, callback_module: auth_store_callbacks, name: auth_store_name},
+      {TwitchEventSub.WebSocket.Client, [{:auth_store, auth_store_name} | opts]}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

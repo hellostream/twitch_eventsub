@@ -10,7 +10,7 @@ dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:hello_twitch_eventsub, "~> 0.2.0"}
+    {:hello_twitch_eventsub, "~> 0.2.1"}
   ]
 end
 ```
@@ -25,31 +25,18 @@ If you are using webhooks with Plug (and you are not already using Phoenix or Pl
 
 ### Setup
 
- * You need to create an app on the [Twitch Developer Console](https://dev.twitch.tv/console/apps/create)
-   to get the `client_id` and `client_secret`.
+- You need to create an app on the [Twitch Developer Console](https://dev.twitch.tv/console/apps/create)
+  to get the `client_id` and `client_secret`.
 
-You can get an OAuth token from the command line, or using `twitchapps.com`.
+#### Generating the OAuth token
 
-#### CLI version (recommended)
-
- * Add a `redirect_uri` to your app on the developer console that looks like:
-   `http://localhost:42069/oauth/callback`
- * [Optional] set `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, and `TWITCH_AUTH_SCOPE`
-   environment variables. For the auth scope you can use the example in the code
-   block further down this page.
- * Run `mix help auth.token` to see the available options.
- * You can specify the auth-specific options or exclude them and the app will use the
-   optional environment variables noted above.
- * If you output `--json` then it will be easy to revoke and refresh your token during
-   development.
-
-**IMPORTANT NOTE:** add `.twitch.json` to your `.gitignore` file.
-
-#### Twitchapps.com version
-
- * Add the redirect URL to your app: `https://twitchapps.com/tokengen/`.
- * Go to the [Twitch OAuth Token Generator](https://twitchapps.com/tokengen/) and
-   paste in your `client_id` and the scopes you want (see the example below you can use).
+- Add a `redirect_uri` to your app on the developer console that looks like:
+  `http://localhost:42069/oauth/callback`
+- [Optional] set `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, and `TWITCH_AUTH_SCOPE`
+  environment variables. For the auth scope you can use the example in the code
+  block further down this page.
+- Run `mix help auth.token` to see the available options.
+- To use the defaults, run `mix twitch.auth --output priv`.
 
 ##### Example Scopes
 
@@ -85,8 +72,6 @@ config :my_app,
     user_id: "123456",
     channel_ids: ["123456"],
     handler: MyApp.TwitchEvents,
-    client_id: System.fetch_env!("TWITCH_CLIENT_ID"),
-    access_token: twitch_access_token,
     # Webhook secret is only if you are using webhooks.
     webhook_secret: System.fetch_env!("TWITCH_WEBHOOK_SECRET")
   ]
@@ -94,13 +79,11 @@ config :my_app,
 
 #### Config options (EventSub)
 
- * `:user_id` - The twitch user ID of the user that your token is for.
- * `:channel_ids` - The twitch user ID of the broadcaster channels that you are subscribing to.
- * `:handler` - A module that `use`s `TwitchEventSub` and implements the `TwitchEventSub.Handler` behaviour.
- * `:client_id` - The client ID of the application you used for the token.
- * `:access_token` - The OAuth token you generated with the correct scopes for your subscriptions.
- * `:subscriptions` - Optional. The list of subscriptions to create. See below for more info.
-   Defaults to:
+- `:user_id` - The twitch user ID of the user that your token is for.
+- `:channel_ids` - The twitch user ID of the broadcaster channels that you are subscribing to.
+- `:handler` - A module that `use`s `TwitchEventSub` and implements the `TwitchEventSub.Handler` behaviour.
+- `:subscriptions` - Optional. The list of subscriptions to create. See below for more info.
+  Defaults to:
 
 ```elixir
 # Default subscriptions.
@@ -148,16 +131,15 @@ config :my_app,
 
 #### Config options (Websocket-specific)
 
- * `:url` - Optional. The URL for the Twitch EventSub websocket server. Defaults to Twitch.
- * `:keepalive_timeout` - Optional. The keepalive timeout in seconds. Specifying an invalid,
-   but numeric value will return the nearest acceptable value. Defaults to `10`.
- * `:start?` - Optional. A boolean value of whether or not to start the eventsub socket.
-   Defaults to `false` if there are no `event_sub` config options.
+- `:url` - Optional. The URL for the Twitch EventSub websocket server. Defaults to Twitch.
+- `:keepalive_timeout` - Optional. The keepalive timeout in seconds. Specifying an invalid,
+  but numeric value will return the nearest acceptable value. Defaults to `10`.
+- `:start?` - Optional. A boolean value of whether or not to start the eventsub socket.
+  Defaults to `false` if there are no `event_sub` config options.
 
 #### Config options (Webhook-specific)
 
- * `:webhook_secret` - The secret to be used when creating and receiving subscriptions.
-
+- `:webhook_secret` - The secret to be used when creating and receiving subscriptions.
 
 ### Handler module
 
