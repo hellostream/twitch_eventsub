@@ -10,7 +10,7 @@ dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:hello_twitch_eventsub, "~> 0.2.1"}
+    {:hello_twitch_eventsub, "~> 0.3.0"}
   ]
 end
 ```
@@ -35,7 +35,8 @@ If you are using webhooks with Plug (and you are not already using Phoenix or Pl
 - [Optional] set `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, and `TWITCH_AUTH_SCOPE`
   environment variables. For the auth scope you can use the example in the code
   block further down this page.
-- Run `mix help auth.token` to see the available options.
+- Run `mix help auth.token` to see the available options. If you aren't using environment
+  variables, you need to pass the options to the CLI command.
 - To use the defaults, run `mix twitch.auth --output priv`.
 
 ##### Example Scopes
@@ -55,17 +56,6 @@ your actions found here [https://dev.twitch.tv/docs/authentication/scopes](https
 
 ```elixir
 # config/runtime.exs
-
-twitch_access_token =
-  case config_env() do
-    :prod ->
-      System.fetch_env!("TWITCH_ACCESS_TOKEN")
-
-    _dev_or_test ->
-      File.read!(".twitch.json")
-      |> Jason.decode!()
-      |> Map.fetch!("access_token")
-  end
 
 config :my_app,
   event_sub: [
@@ -147,7 +137,7 @@ Create a bot module to deal with chat messages or events:
 
 ```elixir
 defmodule MyApp.TwitchEvents do
-  use TwitchEventSub
+  use TwitchEventSub.Handler
 
   @impl true
   def handle_event("channel.follow", event) do
@@ -168,7 +158,7 @@ defmodule MyApp.Application do
     children = [
       # ... existing stuff ...
       # Add the bot.
-      {TwitchEventSub.WebSocket, Application.fetch_env!(:my_app, :event_sub)}
+      {TwitchEventSub, Application.fetch_env!(:my_app, :event_sub)}
     ]
 
     # ...
